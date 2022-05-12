@@ -7,11 +7,11 @@ from torch_geometric.transforms import Constant
 from GCN import FloquetSolver
 from dataset import FloquetDataset
 
-import sys
+import sys, os
 
 # - - - DATA PREPARATIONS - - -
 dataset = FloquetDataset(
-    root='data/Mixed_small_ss_dim10')
+    root=os.path.abspath( os.path.dirname( __file__ ) )+'/data/Mixed_small_ss_dim10')
 
 data = dataset[0]  # Get the first graph object.
 
