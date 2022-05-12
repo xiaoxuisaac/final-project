@@ -55,18 +55,13 @@ class FloquetSolver(torch.nn.Module):
         self.conv3 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv4 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv5 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
-        
-        self.decoder_ur = Seq(Linear(num_node_features, hidden_channels),
-                       ReLU(),
-                       Linear(hidden_channels, 1))
-        
+                
         self.decoder_r = Seq(Linear(num_node_features+1, 256),
                        ReLU(),
                        Linear(256, 64),
                        ReLU(),
                        Linear(64, 1))
         
-
     def forward(self, x, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
         omega_p = torch.tensor(omega_p).float()
         x = x.float()
@@ -83,10 +78,9 @@ class FloquetSolver(torch.nn.Module):
         
         batch_number = int(batch[-1]) + 1
         
-        matrix = torch.zeros((batch_number, dimq, dimq))
-        
-        de =  torch.zeros((batch_number, dimq))
-        
+        # 1-D array to only store the diagonal term
+        matrix = torch.zeros((batch_number, dimq))
+                
         index_offset = 0
         energy_offset = 0
         
@@ -119,70 +113,23 @@ class FloquetSolver(torch.nn.Module):
             # xi = F.dropout(xi, training=self.training)
             xi = self.conv5(xi, edge_index, edge_attr)
             
-            #unrooted graph gives off-diagonal matrix element
-            encode = graph_collapse(xi,  dimq, bz_number, batch_number)
-            decode = self.decoder_ur(encode) # shape (batch_number*nodes_number)
-            decode = decode.view((batch_number, -1))
-            matrix[:, i, :] = decode
-            matrix[:, :, i] = decode
-            
+
+
             #rooted graph gives diagonal entry
             decode = xi.reshape((batch_number, nodes_number, -1))
             decode = decode[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
 
 
             offsets = offsets.unsqueeze(-1)
-
-            if batch_number == 1:
-                omg_p = omega_p.unsqueeze(-1).unsqueeze(-1)
-            else:
-                omg_p = omega_p.unsqueeze(-1)
-            
-
-            
             decode = torch.cat((decode, offsets),-1)
             
             
-            # decode = torch.cat((decode+offsets,omg_p),-1)
             decode = self.decoder_r(decode)
-            # decode = torch.cat((decode+offsets,omg_p),-1)
-            # decode = self.remainder(decode)
-            
-            # for n in range(len(matrix)):
-                # matrix[n, i, i] = (decode[n]+offsets[n]).remainder(omg_p[n])[0]
-                # de[n,i] = decode[n]
-                
-            matrix[:, i, i] = decode.view(-1)
+            matrix[:, i] = decode.view(-1)
             
             
-        return matrix.squeeze(), de
+        return matrix.squeeze()
         
-            
-            
-        
-        # 1. Obtain node embeddings
-        x = self.conv1(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv2(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv3(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv4(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv5(x, edge_index)
-        # 2. Readout layer
-        x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
-
-        # 3. Apply a final classifier
-        x = F.dropout(x, p=0, training=self.training)
-        x = self.lin(x)
-
-        return x
-    
 
 
 
