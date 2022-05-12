@@ -101,7 +101,7 @@ def test(loader):
     model.eval()
     total_loss = 0
     for data in loader:  # Iterate in batches over the training/test dataset.
-        out, de = model(data.x, data.edge_index, data.edge_attr, 
+        out = model(data.x, data.edge_index, data.edge_attr, 
                     data.bz_number, data.dimq, data.omega_p, data.batch)
         
         if data.batch is None:
@@ -111,7 +111,7 @@ def test(loader):
         
         total_loss += criterion(out, data.y, data.evals, data.omega_p) * batch_number
     
-    return total_loss / len(loader.dataset)
+    return total_loss.detach().numpy() / len(loader.dataset)
 
 train_accs = []
 test_accs = []
