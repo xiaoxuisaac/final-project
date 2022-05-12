@@ -9,6 +9,11 @@ from dataset import FloquetDataset
 
 import sys, os
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+print(device)
+
 # - - - DATA PREPARATIONS - - -
 dataset = FloquetDataset(
     root=os.path.abspath( os.path.dirname( __file__ ) )+'/data/Mixed_small_ss_dim10')
@@ -26,7 +31,6 @@ test_dataset = dataset[4000:]
 train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # Finally, we've got the train loader and the test loader! Time to start doing the actual training!
