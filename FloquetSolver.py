@@ -17,6 +17,7 @@ parser.add_argument("--weight_decay", type=float, default=0.001)
 parser.add_argument("--hidden_channel", type=int, default=64)
 parser.add_argument("--node_features", type=int, default=20)
 parser.add_argument("--epoches", type=int, default=100)
+parser.add_argument("--name", type=int, default=random.randint(1000,9999))
 
 args = parser.parse_args()
 
@@ -135,7 +136,10 @@ def main():
     train_accs = []
     test_accs = []
     
-    with open(f'info{name:04d}.txt', 'w+') as f:
+    name = args.name
+    os.makedirs(f'train_result/{name:04d}/model_dict')
+    
+    with open(f'train_result/{name:04d}/info.txt', 'w+') as f:
         f.write(str(args))
     
     for epoch in range(args.epoches):
@@ -147,9 +151,9 @@ def main():
             print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
             train_accs.append(train_acc)
             test_accs.append(test_acc)
-            np.array(train_accs).tofile(f'train_accs{name:04d}.py')
-            np.array(test_accs).tofile(f'test_accs{name:04d}.py')
-            torch.save(model.state_dict(),f"gcn_test1{name:04d}.pt")
+            np.array(train_accs).tofile(f'train_result/{name:04d}/train_accs.np')
+            np.array(test_accs).tofile(f'train_result/{name:04d}/test_accs.np')
+            torch.save(model.state_dict(),f"train_result/{name:04d}/model_dict/gcn_test{epoch:04d}.pt")
 
 
 if __name__ == "__main__":
