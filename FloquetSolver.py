@@ -16,6 +16,7 @@ parser.add_argument("--lr", type=float, default=0.002)
 parser.add_argument("--weight_decay", type=float, default=0.001)
 parser.add_argument("--hidden_channel", type=int, default=64)
 parser.add_argument("--node_features", type=int, default=20)
+parser.add_argument("--epoches", type=int, default=100)
 
 args = parser.parse_args()
 
@@ -137,7 +138,7 @@ def main():
     with open(f'info{name:04d}.txt', 'w+') as f:
         f.write(str(args))
     
-    for epoch in range(1, 100):
+    for epoch in range(args.epoches):
         print(epoch)
         train_acc = train()
         if epoch % 1 == 0:
