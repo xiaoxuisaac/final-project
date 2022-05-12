@@ -117,22 +117,25 @@ def test(loader):
     
     return total_loss.detach().numpy() / len(loader.dataset)
 
-train_accs = []
-test_accs = []
+def main():
+    
+    train_accs = []
+    test_accs = []
+    
+    for epoch in range(1, 2000):
+        print(epoch)
+        train_acc = train()
+        if epoch % 1 == 0:
+            # train_acc = test(train_loader)
+            test_acc = test(test_loader)
+            print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
+            train_accs.append(train_acc)
+            test_accs.append(test_acc)
+    # torch.save(model.state_dict(),"gcn_test1.pt")
 
-for epoch in range(1, 2000):
-    print(epoch)
-    train_acc = train()
-    if epoch % 1 == 0:
-        # train_acc = test(train_loader)
-        test_acc = test(test_loader)
-        print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
-        train_accs.append(train_acc)
-        test_accs.append(test_acc)
-# torch.save(model.state_dict(),"gcn_test1.pt")
 
-
-
+if __name__ == "__main__":
+    main()
 
 
 
