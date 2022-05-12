@@ -1,13 +1,23 @@
 # This data handling code is adapted from the PyTorch geometric collection of google colab notebooks, a fantastic resource for getting started with GNNs. https://pytorch-geometric.readthedocs.io/en/latest/notes/colabs.html
 import torch
 from torch_geometric.datasets import TUDataset
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import Constant
 # import the graph classifier you built in the last step
 from GCN import FloquetSolver
 from dataset import FloquetDataset
+import numpy as np
+import sys, os, random
 
-import sys, os
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("--lr", type=float, default=0.002)
+parser.add_argument("--weight_decay", type=float, default=0.001)
+parser.add_argument("--hidden_channel", type=int, default=64)
+parser.add_argument("--node_features", type=int, default=20)
+
+args = parser.parse_args()
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -37,8 +47,9 @@ test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False)
 # "A data scientist's job is 90% data, 10% science"
 # - - - TRAINING - - -
 
-model = FloquetSolver(hidden_channels=64, num_node_features=20, edge_features=3)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.002, weight_decay= 0.001)
+model = FloquetSolver(hidden_channels=args.hidden_channel,
+                      num_node_features=args.node_features,edge_features=3)
+optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay= args.weight_decay)
 MSELoss = torch.nn.MSELoss()
 
 ENERGY_OFFSET = 2000
@@ -119,10 +130,14 @@ def test(loader):
 
 def main():
     
+    name = random.randint(1000,9999)
     train_accs = []
     test_accs = []
     
-    for epoch in range(1, 2000):
+    with open(f'info{name:04d}.txt', 'w+') as f:
+        f.write(str(args))
+    
+    for epoch in range(1, 100):
         print(epoch)
         train_acc = train()
         if epoch % 1 == 0:
@@ -131,7 +146,9 @@ def main():
             print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
             train_accs.append(train_acc)
             test_accs.append(test_acc)
-    # torch.save(model.state_dict(),"gcn_test1.pt")
+            np.array(train_accs).tofile(f'train_accs{name:04d}.py')
+            np.array(test_accs).tofile(f'test_accs{name:04d}.py')
+            torch.save(model.state_dict(),f"gcn_test1{name:04d}.pt")
 
 
 if __name__ == "__main__":
