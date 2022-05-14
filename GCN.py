@@ -91,6 +91,9 @@ class FloquetSolver(torch.nn.Module):
         matrix = torch.zeros((batch_number, dimq))
         
         
+        edge_index = edge_index.to(device)
+        edge_attr = edge_attr.to(device)
+        
         
         for i in range(dimq):
             

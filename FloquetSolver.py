@@ -129,6 +129,7 @@ def test(loader):
     total_loss = 0
     for data in loader:  # Iterate in batches over the training/test dataset.
         data = data.to(device)
+        print(data.x.is_cuda, data.edge_indexis_cuda, data.edge_attr.is_cuda)
         out = model(data.x, data.edge_index, data.edge_attr, 
                     data.bz_number, data.dimq, data.omega_p, data.batch)
         
