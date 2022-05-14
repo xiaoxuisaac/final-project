@@ -90,19 +90,18 @@ class FloquetSolver(torch.nn.Module):
         
         
         for i in range(dimq):
-            with torch.cuda.device_of(x):
-                xi = x.detach().clone()
+            xi = x.detach().clone()
+        
+            root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
             
-                root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
-                
-                #label the root nodes.
-                xi[root_index, 2] = 1             
-                
-                offsets = xi[root_index,0]
-                offsets = offsets.repeat_interleave(nodes_number)
-                
-               
-                xi = torch.cat((offsets.unsqueeze(-1), xi),1).to(device)
+            #label the root nodes.
+            xi[root_index, 2] = 1             
+            
+            offsets = xi[root_index,0].to(device)
+            offsets = offsets.repeat_interleave(nodes_number)
+            
+           
+            xi = torch.cat((offsets.unsqueeze(-1), xi),1)
             
             
             # print(xi.get_device(), self.get_device())
