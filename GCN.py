@@ -8,6 +8,7 @@ from torch_geometric.utils import add_self_loops, degree
 from torch_geometric.nn import global_add_pool, global_mean_pool
 from torch.nn import Sequential as Seq, Linear, ReLU
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class BetterGCNConv(MessagePassing):
     def __init__(self, nodes_channels, edge_channels, message_channels, input_channels = 0):
@@ -89,17 +90,20 @@ class FloquetSolver(torch.nn.Module):
         
         
         for i in range(dimq):
-            xi = x.clone()
+            with torch.cuda.device_of(x.data):
+                xi = x.clone()
             
             
-            root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
-            
-            #label the root nodes.
-            xi[root_index, 2] = 1             
-            
-            offsets = xi[root_index,0]
-            offsets = offsets.repeat_interleave(nodes_number)
-            xi = torch.cat((offsets.unsqueeze(-1), xi),1)
+                root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
+                
+                #label the root nodes.
+                xi[root_index, 2] = 1             
+                
+                offsets = xi[root_index,0]
+                offsets = offsets.repeat_interleave(nodes_number)
+                
+               
+                xi = torch.cat((offsets.unsqueeze(-1), xi),1).to(device)
             
             
             
@@ -117,13 +121,14 @@ class FloquetSolver(torch.nn.Module):
             xi = self.conv5(xi, edge_index, edge_attr)
             
 
+            with torch.cuda.device_of(x.data):
 
             
-            xi = torch.cat((offsets.unsqueeze(-1), xi),1)
+                xi = torch.cat((offsets.unsqueeze(-1), xi),1)
 
-            #rooted graph gives diagonal entry
-            decode = xi.reshape((batch_number, nodes_number, -1))
-            decode = decode[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
+                #rooted graph gives diagonal entry
+                decode = xi.reshape((batch_number, nodes_number, -1))
+                decode = decode[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
 
 
             
