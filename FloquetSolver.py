@@ -53,6 +53,7 @@ test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False)
 model = FloquetSolver(hidden_channels=args.hidden_channel,
                         num_node_features=args.node_features,edge_features=3)
 
+model.to(device)
 # model = FloquetSolver2(hidden_channels=args.hidden_channel,
                         # num_node_features=args.node_features,edge_features=4)
 
@@ -79,6 +80,7 @@ for data in train_loader:
 
 m = model(data.x, data.edge_index, data.edge_attr, data.bz_number, data.dimq, 
             data.omega_p, data.batch)
+
 # criterion(m, data.y, data.evals, data.omega_p)
 
 
@@ -126,6 +128,7 @@ def test(loader):
     model.eval()
     total_loss = 0
     for data in loader:  # Iterate in batches over the training/test dataset.
+        data = data.to(device)
         out = model(data.x, data.edge_index, data.edge_attr, 
                     data.bz_number, data.dimq, data.omega_p, data.batch)
         
