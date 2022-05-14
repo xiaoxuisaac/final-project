@@ -4,7 +4,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import Constant
 # import the graph classifier you built in the last step
-from GCN import FloquetSolver
+from GCN import FloquetSolver, FloquetSolver2
 from dataset import FloquetDataset
 import numpy as np
 import sys, os, random
@@ -13,11 +13,12 @@ from argparse import ArgumentParser
 
 parser = ArgumentParser()
 parser.add_argument("--lr", type=float, default=0.002)
-parser.add_argument("--weight_decay", type=float, default=0.001)
-parser.add_argument("--hidden_channel", type=int, default=64)
+parser.add_argument("--weight_decay", type=float, default=0.000)
+parser.add_argument("--hidden_channel", type=int, default=32)
 parser.add_argument("--node_features", type=int, default=20)
 parser.add_argument("--epoches", type=int, default=100)
 parser.add_argument("--name", type=int, default=random.randint(1000,9999))
+parser.add_argument("--model", type=str, default='v2')
 
 args = parser.parse_args()
 
@@ -50,7 +51,11 @@ test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False)
 # - - - TRAINING - - -
 
 model = FloquetSolver(hidden_channels=args.hidden_channel,
-                      num_node_features=args.node_features,edge_features=3)
+                        num_node_features=args.node_features,edge_features=3)
+
+# model = FloquetSolver2(hidden_channels=args.hidden_channel,
+                        # num_node_features=args.node_features,edge_features=4)
+
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay= args.weight_decay)
 MSELoss = torch.nn.MSELoss()
 
@@ -69,11 +74,11 @@ def criterion(mats, y, evals, omega_p):
     return MSELoss(predict, y)
     
 
-# for data in train_loader: 
-    # break
+for data in train_loader: 
+    break
 
-# m, de = model(data.x, data.edge_index, data.edge_attr, data.bz_number, data.dimq, 
-            # data.omega_p, data.batch)
+m = model(data.x, data.edge_index, data.edge_attr, data.bz_number, data.dimq, 
+            data.omega_p, data.batch)
 # criterion(m, data.y, data.evals, data.omega_p)
 
 
@@ -92,6 +97,9 @@ def train():
         out = model(data.x, data.edge_index, data.edge_attr, 
                     data.bz_number, data.dimq,  data.omega_p, data.batch) # Perform a single forward pass.
         
+        # loss0 = criterion(out, data.y.float(), data.evals, data.omega_p)  # Compute the loss.
+        
+        evals = torch.tensor(data.evals).view(-1)
         loss0 = criterion(out, data.y.float(), data.evals, data.omega_p)  # Compute the loss.
                         
         
@@ -145,7 +153,7 @@ def main():
     for epoch in range(args.epoches):
         print(epoch)
         train_acc = train()
-        if epoch % 1 == 0:
+        if epoch % 1 == -1:
             # train_acc = test(train_loader)
             test_acc = test(test_loader)
             print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
