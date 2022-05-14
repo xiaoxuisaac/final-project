@@ -16,7 +16,7 @@ class BetterGCNConv(MessagePassing):
         
         if input_channels == 0:
             input_channels = nodes_channels
-        self.mlp1 = Seq(Linear(input_channels, message_channels),
+        self.mlp1 = Seq(Linear(input_channels + edge_channels, message_channels),
                        ReLU(),
                        Linear(message_channels, message_channels),
                        ReLU(),
@@ -36,7 +36,6 @@ class BetterGCNConv(MessagePassing):
         return self.mlp2(torch.cat((x, out), -1))
 
     def message(self, x_j, edge_attr):
-        return self.mlp1(x_j)
         return self.mlp1(torch.cat((x_j, edge_attr).to(device),-1))
 
 
@@ -112,15 +111,15 @@ class FloquetSolver(torch.nn.Module):
             print(xi.is_cuda)
             xi = self.encoder(xi)
             print(xi.is_cuda)
-            xi = self.conv1(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv2(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv3(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv4(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv5(xi, edge_index, edge_attr)
+            # xi = self.conv1(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            # xi = self.conv2(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            # xi = self.conv3(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            # xi = self.conv4(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            # xi = self.conv5(xi, edge_index, edge_attr)
             
 
             with torch.cuda.device_of(x):
