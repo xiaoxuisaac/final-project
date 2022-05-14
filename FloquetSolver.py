@@ -129,17 +129,19 @@ def test(loader):
     model.eval()
     total_loss = 0
     for data in loader:  # Iterate in batches over the training/test dataset.
+        data = data.to(device)
         out = model(data.x, data.edge_index, data.edge_attr, 
                     data.bz_number, data.dimq, data.omega_p, data.batch)
         
         if data.batch is None:
             batch_number = 1
         else:
-            batch_number = data.batch[-1]+1
+            batch_number = data.batch[-1].cpu().detach().numpy()+1
         
-        total_loss += criterion(out, data.y, data.evals, data.omega_p) * batch_number
+        loss = criterion(out, data.y, data.evals, data.omega_p)
+        total_loss += loss.cup().detach().numpy*() * batch_number
     
-    return total_loss.detach().numpy() / len(loader.dataset)
+    return total_loss / len(loader.dataset)
 
 def main():
     
@@ -156,7 +158,7 @@ def main():
     for epoch in range(args.epoches):
         print(epoch)
         train_acc = train()
-        if epoch % 1 == -1:
+        if epoch % 1 == 0:
             # train_acc = test(train_loader)
             test_acc = test(test_loader)
             print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
