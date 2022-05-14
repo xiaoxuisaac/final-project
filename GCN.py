@@ -100,33 +100,29 @@ class FloquetSolver(torch.nn.Module):
             offsets = xi[root_index,0].to(device)
             offsets = offsets.repeat_interleave(nodes_number)
             
-            print(xi.is_cuda, offsets.is_cuda)
             xi = torch.cat((offsets.unsqueeze(-1), xi),1)
             
             
             # print(xi.get_device(), self.get_device())
             
             
-            print(xi.is_cuda)
             xi = self.encoder(xi)
-            print(xi.is_cuda, offsets.is_cuda)
-            # xi = self.conv1(xi, edge_index, edge_attr)
+            xi = self.conv1(xi, edge_index, edge_attr)
             # # xi = F.dropout(xi, training=self.training)
-            # xi = self.conv2(xi, edge_index, edge_attr)
+            xi = self.conv2(xi, edge_index, edge_attr)
             # # xi = F.dropout(xi, training=self.training)
-            # xi = self.conv3(xi, edge_index, edge_attr)
+            xi = self.conv3(xi, edge_index, edge_attr)
             # # xi = F.dropout(xi, training=self.training)
-            # xi = self.conv4(xi, edge_index, edge_attr)
+            xi = self.conv4(xi, edge_index, edge_attr)
             # # xi = F.dropout(xi, training=self.training)
-            # xi = self.conv5(xi, edge_index, edge_attr)
+            xi = self.conv5(xi, edge_index, edge_attr)
             
 
-            with torch.cuda.device_of(x):
-                xi = torch.cat((offsets.unsqueeze(-1), xi),1)
+            xi = torch.cat((offsets.unsqueeze(-1), xi),1)
 
-                #rooted graph gives diagonal entry
-                decode = xi.reshape((batch_number, nodes_number, -1))
-                decode = decode[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
+            #rooted graph gives diagonal entry
+            decode = xi.reshape((batch_number, nodes_number, -1))
+            decode = decode[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
 
 
             
