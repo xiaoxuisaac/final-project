@@ -90,8 +90,8 @@ class FloquetSolver(torch.nn.Module):
         
         
         for i in range(dimq):
-            xi = x.detach().clone()
-        
+            
+            xi = x.detach().clone().to(device)
             root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
             
             #label the root nodes.
