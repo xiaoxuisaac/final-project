@@ -39,7 +39,7 @@ class BetterGCNConv(MessagePassing):
         return self.mlp2(torch.cat((x, out), -1))
 
     def message(self, x_j, edge_attr):
-        return self.mlp1(torch.cat((x_j, edge_attr).to(device),-1))
+        return self.mlp1(torch.cat((x_j, edge_attr),-1))
 
 
 def graph_collapse(x, dimq, bz_number, batch_number):

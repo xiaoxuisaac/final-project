@@ -96,6 +96,8 @@ def train():
     counter = 0
     total_loss = 0
     for data in train_loader:  # Iterate in batches over the training dataset.
+        data = data.to(device)
+        print('before trianing', data.x.is_cuda)
         out = model(data.x, data.edge_index, data.edge_attr, 
                     data.bz_number, data.dimq,  data.omega_p, data.batch) # Perform a single forward pass.
         
@@ -128,8 +130,6 @@ def test(loader):
     model.eval()
     total_loss = 0
     for data in loader:  # Iterate in batches over the training/test dataset.
-        data = data.to(device)
-        print(data.x.is_cuda, data.edge_indexis_cuda, data.edge_attr.is_cuda)
         out = model(data.x, data.edge_index, data.edge_attr, 
                     data.bz_number, data.dimq, data.omega_p, data.batch)
         
