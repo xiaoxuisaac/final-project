@@ -57,6 +57,8 @@ class FloquetSolver(torch.nn.Module):
         
         self.conv1 = BetterGCNConv(num_node_features, edge_features, 
                                    hidden_channels, input_channels=0)
+        self.conv1.to(device)
+        
         self.conv2 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv3 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv4 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
