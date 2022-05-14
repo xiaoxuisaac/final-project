@@ -31,9 +31,6 @@ class BetterGCNConv(MessagePassing):
 
 
     def forward(self, x, edge_index, edge_attr):
-        
-        print('gcn', x.is_cuda, edge_index.is_cuda, edge_attr.is_cuda)
-        
         out =  self.propagate(edge_index, x=x, edge_attr = edge_attr)
                         
         return self.mlp2(torch.cat((x, out), -1))
@@ -95,7 +92,7 @@ class FloquetSolver(torch.nn.Module):
         
         for i in range(dimq):
             
-            xi = x.detach().clone().to(device)
+            xi = x.detach().clone()
             root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
             
             #label the root nodes.
