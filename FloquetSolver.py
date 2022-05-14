@@ -117,7 +117,7 @@ def train():
         total_loss += loss.cpu().detach().numpy()*batch_number
         
         
-        print(counter, loss.detach().numpy())
+        print(counter, loss.cpu().detach().numpy())
         counter += 1
         loss.backward()  # Derive gradients.
         optimizer.step()  # Update parameters based on gradients.
