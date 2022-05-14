@@ -31,6 +31,9 @@ class BetterGCNConv(MessagePassing):
 
 
     def forward(self, x, edge_index, edge_attr):
+        
+        print('gcn', x.is_cuda, edge_index.is_cuda, edge_attr.is_cuda)
+        
         out =  self.propagate(edge_index, x=x, edge_attr = edge_attr)
                         
         return self.mlp2(torch.cat((x, out), -1))
