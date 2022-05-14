@@ -110,7 +110,7 @@ class FloquetSolver(torch.nn.Module):
             
             print(xi.is_cuda)
             xi = self.encoder(xi)
-            print(xi.is_cuda)
+            print(xi.is_cuda, offsets.is_cuda)
             # xi = self.conv1(xi, edge_index, edge_attr)
             # # xi = F.dropout(xi, training=self.training)
             # xi = self.conv2(xi, edge_index, edge_attr)
@@ -123,8 +123,6 @@ class FloquetSolver(torch.nn.Module):
             
 
             with torch.cuda.device_of(x):
-
-            
                 xi = torch.cat((offsets.unsqueeze(-1), xi),1)
 
                 #rooted graph gives diagonal entry
