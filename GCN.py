@@ -107,7 +107,6 @@ class FloquetSolver(torch.nn.Module):
             
             
             xi = self.encoder(xi)
-            print(xi.is_cuda)
             
             xi = self.conv1(xi, edge_index, edge_attr)
             # # xi = F.dropout(xi, training=self.training)
