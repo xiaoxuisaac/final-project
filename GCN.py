@@ -90,7 +90,7 @@ class FloquetSolver(torch.nn.Module):
         
         
         for i in range(dimq):
-            with torch.cuda.device_of(x.data):
+            with torch.cuda.device_of(x):
                 xi = x.detach().clone()
             
                 root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
@@ -105,7 +105,7 @@ class FloquetSolver(torch.nn.Module):
                 xi = torch.cat((offsets.unsqueeze(-1), xi),1).to(device)
             
             
-            print(xi.get_device(), self.get_device())
+            # print(xi.get_device(), self.get_device())
             
             xi = self.encoder(xi)
             
@@ -120,7 +120,7 @@ class FloquetSolver(torch.nn.Module):
             xi = self.conv5(xi, edge_index, edge_attr)
             
 
-            with torch.cuda.device_of(x.data):
+            with torch.cuda.device_of(x):
 
             
                 xi = torch.cat((offsets.unsqueeze(-1), xi),1)
