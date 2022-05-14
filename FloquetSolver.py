@@ -71,9 +71,7 @@ def criterion(mats, y, evals, omega_p):
     for i in range(len(y)):
         if y[i] == -1964.:
             y[i] = predict[i]
-    
-    print(mats.is_cuda, predict.is_cuda, y.is_cuda)
-    
+        
     return MSELoss(predict, y)
     
 
@@ -114,9 +112,9 @@ def train():
         if data.batch is None:
             batch_number = 1
         else:
-            batch_number = data.batch[-1]+1
+            batch_number = data.batch[-1].cpu().detach().numpy()+1
             
-        total_loss += loss.detach().numpy()*batch_number.detach().numpy()
+        total_loss += loss.cpu().detach().numpy()*batch_number
         
         
         print(counter, loss.detach().numpy())
