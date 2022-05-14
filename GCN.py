@@ -68,7 +68,7 @@ class FloquetSolver(torch.nn.Module):
                        ReLU(),
                        Linear(64, 1))
         
-    def forward(self, x, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
+    def forward(self, x, edge_index, edge_attr, bz_number, dimq, omega_p, batch, root = True):
         omega_p = torch.tensor(omega_p).float()
         x = x.float()
         edge_attr = edge_attr.float()
@@ -96,10 +96,15 @@ class FloquetSolver(torch.nn.Module):
             root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
             
             #label the root nodes.
-            xi[root_index, 2] = 1             
+            if root:
+                xi[root_index, 2] = 1             
             
             offsets = xi[root_index,0]
             offsets = offsets.repeat_interleave(nodes_number)
+            
+            if not root:
+                offsets[:] = 0
+            
             
             xi = torch.cat((offsets.unsqueeze(-1), xi),1)
             
@@ -135,42 +140,112 @@ class FloquetSolver(torch.nn.Module):
         
 
 
+    
 class FloquetRecurrentSolver(torch.nn.Module):
-    def __init__(self, hidden_channels, num_node_features, edge_features, rounds = 2):
+    def __init__(self, hidden_channels, num_node_features, 
+                 edge_features, memo = 2):
         super(FloquetSolver, self).__init__()
         torch.manual_seed(12345)
         
         self.encoder= Seq(Linear(4, num_node_features),
-                       ReLU(),
-                       Linear(num_node_features, num_node_features))
+                        ReLU(),
+                        Linear(num_node_features, num_node_features))
         
-        self.conv1 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
+        self.conv1 = BetterGCNConv(num_node_features, edge_features, 
+                                   hidden_channels, input_channels=num_node_features*memo)        
         self.conv2 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv3 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv4 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv5 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
-        
-        self.decoder_ur = Seq(Linear(num_node_features, hidden_channels),
-                       ReLU(),
-                       Linear(hidden_channels, 1))
-        
+                
         self.decoder_r = Seq(Linear(num_node_features+1, 256),
                        ReLU(),
                        Linear(256, 64),
                        ReLU(),
                        Linear(64, 1))
+                
         
-        # self.remainder = Seq(Linear(2, 1000),
-        #                ReLU(),
-        #                Linear(1000, 300),
-        #                ReLU(),
-        #                Linear(300, 1))
-
-        # self.lin = nn.Linear(hidden_channels, num_classes)
-        # self.bn = nn.BatchNorm1d(hidden_channels, affine=False)
-
-
     def forward(self, x, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
+        x = x.float()
+        edge_attr = edge_attr.float()
+        if batch is not None: 
+            dimq = int(dimq[0])
+            bz_number = int(bz_number[0])
+        else:
+            batch = torch.zeros(len(x)).int()
+            
+        bz_number = bz_number
+        dimq = dimq
+            
+        nodes_number = dimq*(2*bz_number +1)
+        
+        
+        batch_number = int(batch[-1]) + 1
+        
+        # 1-D array to only store the diagonal term
+        matrix = torch.zeros((self.batch_number, dimq)).to(device)
+        
+        
+        root_index = x[:,1] == bz_number        
+        self.evals = x[root_index, 0]
+        
+        
+            
+        x_memo = 0 # final embedding of the nodes. dimension (len(batch), memo*num_node_features)
+        
+        return matrix
+            
+        
+    def iter_round(self, x, x_memo, edge_index, edge_attr,
+                   batch_number, dimq, bz_number, memo):
+
+        nodes_number = (bz_number*2+1)*dimq
+        
+        
+        
+        x_memo # (batch_number*dimq, memo*num_node_features)
+        
+        x_memo = x_memo.view(batch_number, dimq, -1)
+        
+        x_memo = x_memo.repeat_interleave(2*bz_number+1, 0)
+        
+        x_memo = x_memo.view(len(x), -1)
+        
+        end_embedding = torch.zeros((len(x_memo), int(len(x_memo[0])/memo))) 
+        # (len(batch), memo*num_node_features)
+        
+        for i in range(dimq):
+            xi = x.detach().clone()
+            root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
+            
+            #label the root nodes.
+            xi[root_index, 2] = 1             
+            
+            offsets = xi[root_index,0]
+            offsets = offsets.repeat_interleave(nodes_number)
+            
+            xi = torch.cat((offsets.unsqueeze(-1), xi),1)
+            xi = self.encoder(xi)
+ 
+            xi = torch.concat((xi, x_memo), -1)
+ 
+            xi = self.conv1(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            xi = self.conv2(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            xi = self.conv3(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            xi = self.conv4(xi, edge_index, edge_attr)
+            # # xi = F.dropout(xi, training=self.training)
+            xi = self.conv5(xi, edge_index, edge_attr)
+            #rooted graph gives diagonal entry
+            decode = xi.reshape((self.batch_number, self.nodes_number, -1))
+            decode = decode[:, self.bz_number*self.dimq + i, :] #shape (batch_number, hidden_channels)            
+            end_embedding[i] = decode
+            
+            
+        
+    def forward2(self, x, x_memo, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
         omega_p = torch.tensor(omega_p).float()
         x = x.float()
         edge_attr = edge_attr.float()
@@ -186,102 +261,65 @@ class FloquetRecurrentSolver(torch.nn.Module):
         
         batch_number = int(batch[-1]) + 1
         
-        matrix = torch.zeros((batch_number, dimq, dimq))
+        # 1-D array to only store the diagonal term
+        matrix = torch.zeros((batch_number, dimq)).to(device)
         
-        de =  torch.zeros((batch_number, dimq))
+        x_memo = x_memo.view(batch_number, dimq, -1)
         
-        index_offset = 0
-        energy_offset = 0
+        x_memo = x_memo.repeat_interleave(2*bz_number+1, 0)
+        
+        x_memo = x_memo.view(len(x), -1)
+        
+        
+        test = torch.zeros(len(x[0])).to(device)
+        
+        test = self.encoder(test)
+        
+        
+        end_embedding = torch.zeros((batch_number, dimq, len(test))) 
+        
+        
         
         for i in range(dimq):
-            xi = torch.zeros((x.shape[0], x.shape[1]+1))
-            current_batch = -1
             
-            offsets = torch.zeros(batch_number)
+            xi = x.detach().clone()
+            root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
             
-            for j in range(len(xi)):
-                if current_batch != batch[j]:
-                    current_batch = batch[j]
-                    index_offset = int(current_batch * nodes_number)
-                    energy_offset = x[index_offset + dimq*bz_number +i][0]
-                    offsets[current_batch] = energy_offset
-                xi[j][0] = x[j][0] - energy_offset
-                xi[j][1:] = x[j]
-                if xi[j][0] == 0 and j % dimq == i:
-                    xi[j][3] = 1
+            #label the root nodes.
+            xi[root_index, 2] = 1             
+            
+            offsets = xi[root_index,0]
+            offsets = offsets.repeat_interleave(nodes_number)
+            
+            xi = torch.cat((offsets.unsqueeze(-1), xi),1)
+            
             
             xi = self.encoder(xi)
             
+            xi = torch.concat((xi, x_memo), -1)
+            
             xi = self.conv1(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
+            # # xi = F.dropout(xi, training=self.training)
             xi = self.conv2(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
+            # # xi = F.dropout(xi, training=self.training)
             xi = self.conv3(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
+            # # xi = F.dropout(xi, training=self.training)
             xi = self.conv4(xi, edge_index, edge_attr)
-            # xi = F.dropout(xi, training=self.training)
+            # # xi = F.dropout(xi, training=self.training)
             xi = self.conv5(xi, edge_index, edge_attr)
             
-            #unrooted graph gives off-diagonal matrix element
-            encode = graph_collapse(xi,  dimq, bz_number, batch_number)
-            decode = self.decoder_ur(encode) # shape (batch_number*nodes_number)
-            decode = decode.view((batch_number, -1))
-            matrix[:, i, :] = decode
-            matrix[:, :, i] = decode
-            
+
+            xi = torch.cat((offsets.unsqueeze(-1), xi),1)
+
             #rooted graph gives diagonal entry
-            decode = xi.reshape((batch_number, nodes_number, -1))
-            decode = decode[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
+            embed = xi.reshape((batch_number, nodes_number, -1))
+            embed = embed[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
 
 
-            offsets = offsets.unsqueeze(-1)
-
-            if batch_number == 1:
-                omg_p = omega_p.unsqueeze(-1).unsqueeze(-1)
-            else:
-                omg_p = omega_p.unsqueeze(-1)
             
-
+            result = self.decoder_r(embed)
+            matrix[:, i] = result.view(-1)
+            end_embedding[:, i, :] =result
             
-            decode = torch.cat((decode, offsets),-1)
-            
-            
-            # decode = torch.cat((decode+offsets,omg_p),-1)
-            decode = self.decoder_r(decode)
-            # decode = torch.cat((decode+offsets,omg_p),-1)
-            # decode = self.remainder(decode)
-            
-            # for n in range(len(matrix)):
-                # matrix[n, i, i] = (decode[n]+offsets[n]).remainder(omg_p[n])[0]
-                # de[n,i] = decode[n]
-                
-            matrix[:, i, i] = decode.view(-1)
-            
-            
-        return matrix.squeeze(), de
+        return matrix.squeeze(), end_embedding
         
-            
-            
-        
-        # 1. Obtain node embeddings
-        x = self.conv1(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv2(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv3(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv4(x, edge_index)
-        x = self.bn(x)
-        x = x.relu()
-        x = self.conv5(x, edge_index)
-        # 2. Readout layer
-        x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
-
-        # 3. Apply a final classifier
-        x = F.dropout(x, p=0, training=self.training)
-        x = self.lin(x)
-
-        return x

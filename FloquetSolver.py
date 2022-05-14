@@ -18,7 +18,7 @@ parser.add_argument("--hidden_channel", type=int, default=32)
 parser.add_argument("--node_features", type=int, default=20)
 parser.add_argument("--epoches", type=int, default=100)
 parser.add_argument("--name", type=int, default=random.randint(1000,9999))
-parser.add_argument("--model", type=str, default='v2')
+parser.add_argument("--root", type=bool, default=False)
 
 args = parser.parse_args()
 
@@ -98,7 +98,7 @@ def train():
     for data in train_loader:  # Iterate in batches over the training dataset.
         data = data.to(device)
         out = model(data.x, data.edge_index, data.edge_attr, 
-                    data.bz_number, data.dimq,  data.omega_p, data.batch) # Perform a single forward pass.
+                    data.bz_number, data.dimq,  data.omega_p, data.batch, args.root) # Perform a single forward pass.
         
         # loss0 = criterion(out, data.y.float(), data.evals, data.omega_p)  # Compute the loss.
         
@@ -131,7 +131,7 @@ def test(loader):
     for data in loader:  # Iterate in batches over the training/test dataset.
         data = data.to(device)
         out = model(data.x, data.edge_index, data.edge_attr, 
-                    data.bz_number, data.dimq, data.omega_p, data.batch)
+                    data.bz_number, data.dimq, data.omega_p, data.batch,args.root)
         
         if data.batch is None:
             batch_number = 1
