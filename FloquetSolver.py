@@ -72,7 +72,7 @@ def criterion(mats, y, evals, omega_p):
         if y[i] == -1964.:
             y[i] = predict[i]
     
-    print(predict.is_cuda, y.is_cuda)
+    print(mats.is_cuda, predict.is_cuda, y.is_cuda)
     
     return MSELoss(predict, y)
     

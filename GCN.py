@@ -85,7 +85,7 @@ class FloquetSolver(torch.nn.Module):
         batch_number = int(batch[-1]) + 1
         
         # 1-D array to only store the diagonal term
-        matrix = torch.zeros((batch_number, dimq))
+        matrix = torch.zeros((batch_number, dimq)).to(device)
         
         
         
