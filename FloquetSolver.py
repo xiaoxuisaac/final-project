@@ -18,7 +18,7 @@ parser.add_argument("--hidden_channel", type=int, default=32)
 parser.add_argument("--node_features", type=int, default=20)
 parser.add_argument("--epoches", type=int, default=100)
 parser.add_argument("--name", type=int, default=random.randint(1000,9999))
-parser.add_argument("--root", type=bool, default=False)
+parser.add_argument("--root", type=bool, default=True)
 
 args = parser.parse_args()
 
@@ -102,7 +102,7 @@ def train():
         
         # loss0 = criterion(out, data.y.float(), data.evals, data.omega_p)  # Compute the loss.
         
-        evals = torch.tensor(data.evals).view(-1)
+        # evals = torch.tensor(data.evals).view(-1)
         loss0 = criterion(out, data.y.float(), data.evals, data.omega_p)  # Compute the loss.
                         
         

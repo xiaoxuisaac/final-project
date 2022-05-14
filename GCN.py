@@ -144,7 +144,7 @@ class FloquetSolver(torch.nn.Module):
 class FloquetRecurrentSolver(torch.nn.Module):
     def __init__(self, hidden_channels, num_node_features, 
                  edge_features, memo = 2):
-        super(FloquetSolver, self).__init__()
+        super(FloquetRecurrentSolver, self).__init__()
         torch.manual_seed(12345)
         
         self.encoder= Seq(Linear(4, num_node_features),
@@ -152,7 +152,7 @@ class FloquetRecurrentSolver(torch.nn.Module):
                         Linear(num_node_features, num_node_features))
         
         self.conv1 = BetterGCNConv(num_node_features, edge_features, 
-                                   hidden_channels, input_channels=num_node_features*memo)        
+                                   hidden_channels, input_channels=num_node_features*(memo+1))        
         self.conv2 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv3 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv4 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
@@ -165,7 +165,7 @@ class FloquetRecurrentSolver(torch.nn.Module):
                        Linear(64, 1))
                 
         
-    def forward(self, x, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
+    def forward2(self, x, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
         x = x.float()
         edge_attr = edge_attr.float()
         if batch is not None: 
@@ -245,7 +245,7 @@ class FloquetRecurrentSolver(torch.nn.Module):
             
             
         
-    def forward2(self, x, x_memo, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
+    def forward(self, x, x_memo, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
         omega_p = torch.tensor(omega_p).float()
         x = x.float()
         edge_attr = edge_attr.float()
@@ -271,12 +271,12 @@ class FloquetRecurrentSolver(torch.nn.Module):
         x_memo = x_memo.view(len(x), -1)
         
         
-        test = torch.zeros(len(x[0])).to(device)
+        test = torch.zeros(len(x[0])+1).to(device)
         
         test = self.encoder(test)
         
         
-        end_embedding = torch.zeros((batch_number, dimq, len(test))) 
+        x_embed = torch.zeros((batch_number, dimq, len(test))) 
         
         
         
@@ -319,7 +319,7 @@ class FloquetRecurrentSolver(torch.nn.Module):
             
             result = self.decoder_r(embed)
             matrix[:, i] = result.view(-1)
-            end_embedding[:, i, :] =result
+            x_embed[:, i, :] =result
             
-        return matrix.squeeze(), end_embedding
+        return matrix.squeeze(), x_embed.view(batch_number*dimq, -1)
         
