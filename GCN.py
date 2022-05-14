@@ -100,7 +100,7 @@ class FloquetSolver(torch.nn.Module):
             offsets = xi[root_index,0].to(device)
             offsets = offsets.repeat_interleave(nodes_number)
             
-           
+            print(xi.is_cuda, offsets.is_cuda)
             xi = torch.cat((offsets.unsqueeze(-1), xi),1)
             
             
