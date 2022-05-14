@@ -91,8 +91,6 @@ class FloquetSolver(torch.nn.Module):
         matrix = torch.zeros((batch_number, dimq))
         
         
-        edge_index = edge_index.to(device)
-        edge_attr = edge_attr.to(device)
         
         
         for i in range(dimq):
@@ -103,7 +101,7 @@ class FloquetSolver(torch.nn.Module):
             #label the root nodes.
             xi[root_index, 2] = 1             
             
-            offsets = xi[root_index,0].to(device)
+            offsets = xi[root_index,0]
             offsets = offsets.repeat_interleave(nodes_number)
             
             xi = torch.cat((offsets.unsqueeze(-1), xi),1)
@@ -139,103 +137,6 @@ class FloquetSolver(torch.nn.Module):
             
         return matrix.squeeze()
         
-
-class FloquetSolver2(torch.nn.Module):
-    '''
-    The info of the starting point is encoded in the edge feature.
-    '''
-    def __init__(self, hidden_channels, num_node_features, edge_features):
-        super(FloquetSolver2, self).__init__()
-        torch.manual_seed(12345)
-        
-        self.encoder= Seq(Linear(3, num_node_features),
-                       ReLU(),
-                       Linear(num_node_features, num_node_features))
-        
-        self.conv1 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
-        self.conv2 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
-        self.conv3 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
-        self.conv4 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
-        self.conv5 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
-                
-        self.decoder_r = Seq(Linear(num_node_features, 64),
-                       ReLU(),
-                       Linear(64, 1))
-        
-    def forward(self, x, edge_index, edge_attr, bz_number, dimq, omega_p, batch):
-        omega_p = torch.tensor(omega_p).float()
-        x = x.float()
-        edge_attr = edge_attr.float()
-        
-        if batch is not None: 
-            dimq = int(dimq[0])
-            bz_number = int(bz_number[0])
-        else:
-            batch = torch.zeros(len(x)).int()
-        
-        nodes_number = dimq*(2*bz_number +1)
-        
-        
-        batch_number = int(batch[-1]) + 1
-        
-        # 1-D array to only store the diagonal term
-        matrix = torch.zeros((batch_number, dimq))
-                
-        
-        
-        for i in range(dimq):
-            edge_attri = torch.zeros(edge_attr.shape[0], edge_attr.shape[1]+1)
-           
-            xi = x.clone()
-            edge_attri = edge_attr.clone()
-            
-            root_index = torch.arange(0, len(xi))%nodes_number == bz_number*dimq + i
-            
-            #label the root nodes.
-            xi[root_index, 2] = 1             
-            
-            
-            
-           
-            
-            # offsets = torch.zeros(batch_number)
-            
-            for j in range(len(edge_attri)):
-                batch_index = batch[edge_index[0,j]]                                
-                energy_offset = x[batch_index*nodes_number + dimq*bz_number +i][0]
-                edge_attri[j,:3] = edge_attr[j,:]
-                edge_attri[j,3] = energy_offset
-                
-            for j in range(len(xi)):
-                if j % nodes_number == dimq*bz_number +i:
-                    xi[j,2] = 1
-                    
-
-
-            xi = self.encoder(xi)
-            xi = self.conv1(xi, edge_index, edge_attri)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv2(xi, edge_index, edge_attri)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv3(xi, edge_index, edge_attri)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv4(xi, edge_index, edge_attri)
-            # xi = F.dropout(xi, training=self.training)
-            xi = self.conv5(xi, edge_index, edge_attri)
-            
-
-
-            #rooted graph gives diagonal entry
-            decode = xi.reshape((batch_number, nodes_number, -1))
-            decode = decode[:, bz_number*dimq + i, :] #shape (batch_number, hidden_channels)
-            
-            decode = self.decoder_r(decode)
-            matrix[:, i] = decode.view(-1)
-            
-            
-        return matrix.squeeze()
-        
-
 
 
 class FloquetRecurrentSolver(torch.nn.Module):
