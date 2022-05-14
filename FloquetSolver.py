@@ -75,11 +75,11 @@ def criterion(mats, y, evals, omega_p):
     return MSELoss(predict, y)
     
 
-for data in train_loader: 
-    break
+# for data in train_loader: 
+    # break
 
-m = model(data.x, data.edge_index, data.edge_attr, data.bz_number, data.dimq, 
-            data.omega_p, data.batch)
+# m = model(data.x, data.edge_index, data.edge_attr, data.bz_number, data.dimq, 
+            # data.omega_p, data.batch)
 
 # criterion(m, data.y, data.evals, data.omega_p)
 
