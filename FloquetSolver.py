@@ -4,7 +4,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
 from torch_geometric.transforms import Constant
 # import the graph classifier you built in the last step
-from GCN import FloquetSolver, FloquetSolver2
+from GCN import FloquetSolver
 from dataset import FloquetDataset
 import numpy as np
 import sys, os, random
