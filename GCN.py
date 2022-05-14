@@ -16,7 +16,7 @@ class BetterGCNConv(MessagePassing):
         
         if input_channels == 0:
             input_channels = nodes_channels
-        self.mlp1 = Seq(Linear(input_channels + edge_channels, message_channels),
+        self.mlp1 = Seq(Linear(input_channels, message_channels),
                        ReLU(),
                        Linear(message_channels, message_channels),
                        ReLU(),
@@ -36,6 +36,7 @@ class BetterGCNConv(MessagePassing):
         return self.mlp2(torch.cat((x, out), -1))
 
     def message(self, x_j, edge_attr):
+        return self.mlp1(x_j)
         return self.mlp1(torch.cat((x_j, edge_attr).to(device),-1))
 
 
@@ -56,9 +57,7 @@ class FloquetSolver(torch.nn.Module):
                         Linear(num_node_features, num_node_features))
         
         self.conv1 = BetterGCNConv(num_node_features, edge_features, 
-                                   hidden_channels, input_channels=0)
-        self.conv1.to(device)
-        
+                                   hidden_channels, input_channels=0)        
         self.conv2 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv3 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
         self.conv4 = BetterGCNConv(num_node_features, edge_features, hidden_channels)
