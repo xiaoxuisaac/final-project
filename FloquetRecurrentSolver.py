@@ -175,7 +175,7 @@ def test(loader):
             batch_number = data.batch[-1].cpu().detach().numpy()+1
         
         loss = criterion(out, data.y, data.evals, data.omega_p)
-        total_loss += loss.cup().detach().numpy() * batch_number
+        total_loss += loss.cpu().detach().numpy() * batch_number
     
     return total_loss.detach().numpy() / len(loader.dataset)
 
