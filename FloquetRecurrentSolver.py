@@ -20,6 +20,7 @@ parser.add_argument("--epoches", type=int, default=100)
 parser.add_argument("--name", type=int, default=random.randint(1000,9999))
 parser.add_argument("--memo", type=int, default=3)
 parser.add_argument("--round", type=int, default=5)
+parser.add_argument("--save_dir", type=str, default='train_result_recur')
 
 args = parser.parse_args()
 
@@ -147,9 +148,27 @@ def test(loader):
     total_loss = 0
     for data in loader:  # Iterate in batches over the training/test dataset.
         data = data.to(device)
-        out = model(data.x, data.edge_index, data.edge_attr, 
-                    data.bz_number, data.dimq, data.omega_p, data.batch)
         
+        if data.batch == None:
+            bz_number = int(data.bz_number)
+        else:
+            bz_number = int(data.bz_number[0])
+       
+                
+        x_memo = torch.rand(int((len(data.x)/(bz_number*2+1))), 
+                              args.node_features*args.memo).to(device)
+        
+        
+        for i in range(args.round):
+    
+            out, x_embed = model(data.x, x_memo, data.edge_index, data.edge_attr, 
+                        data.bz_number, data.dimq,  data.omega_p, data.batch) # Perform a single forward pass.
+            
+            x_memo[:,args.node_features:] =  x_memo[:,:-args.node_features]
+            x_memo[:,:args.node_features] = x_embed
+            
+                                
+
         if data.batch is None:
             batch_number = 1
         else:
@@ -166,11 +185,14 @@ def main():
     train_accs = []
     test_accs = []
     
-    name = args.name
-    # os.makedirs(f'train_result/{name:04d}/model_dict')
     
-    # with open(f'train_result/{name:04d}/info.txt', 'w+') as f:
-        # f.write(str(args))
+    
+    save_dir = args.save_dir
+    name = args.name
+    os.makedirs(save_dir+f'/{name:04d}/model_dict')
+    
+    with open(save_dir+f'/{name:04d}/info.txt', 'w+') as f:
+        f.write(str(args))
     
     for epoch in range(args.epoches):
         print(epoch)
@@ -181,9 +203,9 @@ def main():
             print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
             train_accs.append(train_acc)
             test_accs.append(test_acc)
-            np.array(train_accs).tofile(f'train_result/{name:04d}/train_accs.np')
-            np.array(test_accs).tofile(f'train_result/{name:04d}/test_accs.np')
-            torch.save(model.state_dict(),f"train_result/{name:04d}/model_dict/gcn_test{epoch:04d}.pt")
+            np.array(train_accs).tofile(save_dir+ f'/{name:04d}/train_accs.np')
+            np.array(test_accs).tofile(save_dir+f'/{name:04d}/test_accs.np')
+            torch.save(model.state_dict(),save_dir+f"/{name:04d}/model_dict/gcn_test{epoch:04d}.pt")
 
 
 if __name__ == "__main__":
