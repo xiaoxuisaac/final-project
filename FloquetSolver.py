@@ -44,6 +44,9 @@ test_dataset = dataset[4000:]
 train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=50, shuffle=False)
 
+dataset_new = FloquetDataset(
+    root=os.path.abspath( os.path.dirname( __file__ ) )+'/data/Mixed_small_ss_dim10_BZ6_test')
+test_loader_new = DataLoader(dataset_new, batch_size=50, shuffle=False)
 
 
 # Finally, we've got the train loader and the test loader! Time to start doing the actual training!
@@ -148,6 +151,7 @@ def main():
     name = random.randint(1000,9999)
     train_accs = []
     test_accs = []
+    test_accs_new = []
     
     name = args.name
     os.makedirs(f'train_result/{name:04d}/model_dict')
@@ -161,11 +165,15 @@ def main():
         if epoch % 1 == 0:
             # train_acc = test(train_loader)
             test_acc = test(test_loader)
-            print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
+            test_acc_new = test(test_loader_new)
+            
+            print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}, Sep Test Acc: {test_acc_new:.4f}')
             train_accs.append(train_acc)
             test_accs.append(test_acc)
+            test_accs_new.append(test_acc_new)
             np.array(train_accs).tofile(f'train_result/{name:04d}/train_accs.np')
             np.array(test_accs).tofile(f'train_result/{name:04d}/test_accs.np')
+            np.array(test_accs_new).tofile(f'train_result/{name:04d}/test_accs_new.np')
             torch.save(model.state_dict(),f"train_result/{name:04d}/model_dict/gcn_test{epoch:04d}.pt")
 
 
